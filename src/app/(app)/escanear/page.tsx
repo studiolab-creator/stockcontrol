@@ -1,14 +1,16 @@
 import { getAuthenticatedUser } from '@/lib/dal'
-import { QrScannerLoader } from '@/components/qr-scanner-loader'
+import { QrScannerClient } from '@/components/qr-scanner-client'
 
+// QrScannerClient is 'use client' — Next.js treats it as a client boundary and
+// never server-renders it. All browser APIs (getUserMedia, Worker) are inside
+// useEffect, so no dynamic() wrapper or ssr:false guard is needed.
 export default async function EscanearPage() {
-  // Any authenticated user (ADMIN or OPERADOR) can scan QR codes
   await getAuthenticatedUser()
 
   return (
     <div>
       <h1 className="text-xl font-semibold text-foreground mb-6">Escanear QR</h1>
-      <QrScannerLoader />
+      <QrScannerClient />
     </div>
   )
 }
