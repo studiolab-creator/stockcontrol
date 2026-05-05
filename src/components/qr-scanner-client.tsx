@@ -1,20 +1,45 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import QrScanner from 'qr-scanner'
+
+// No top-level import of qr-scanner.
+// Loading it at module-init time silently aborts on iOS Safari (Worker / blob-URL
+// setup fails under ngrok), which prevents hydration and makes every button tap
+// a no-op. Instead we use the native BarcodeDetector (iOS 17 / Chrome 88+) and
+// lazy-load qr-scanner only as a fallback when BarcodeDetector is absent.
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const SCAN_INTERVAL_MS = 300
-// getUserMedia on iOS Safari via ngrok can hang indefinitely (no resolve, no reject).
-// After this many ms we abort and let the user retry.
 const GUM_TIMEOUT_MS = 12_000
+
+// Module-level cache so we only import qr-scanner once across scans.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let qrScannerModule: any = null
+
+async function detectQRCode(video: HTMLVideoElement): Promise<string | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if ('BarcodeDetector' in window) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const results: any[] = await detector.detect(video)
+    return results[0]?.rawValue ?? null
+  }
+  // Fallback: qr-scanner (imported lazily so iOS never loads it)
+  if (!qrScannerModule) {
+    qrScannerModule = (await import('qr-scanner')).default
+  }
+  try {
+    const result = await qrScannerModule.scanImage(video, { returnDetailedScanResult: true })
+    return result.data as string
+  } catch {
+    return null
+  }
+}
 
 export function QrScannerClient() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  // BarcodeDetector is typed by qr-scanner's own .d.ts but not in lib.dom
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const engineRef = useRef<Promise<Worker | any> | null>(null)
   const scanTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const gumTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router = useRouter()
@@ -22,8 +47,8 @@ export function QrScannerClient() {
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [scanning, setScanning] = useState(false)
   const [starting, setStarting] = useState(false)
-  // Diagnostic: counts raw taps regardless of guard state so we can tell if
-  // onClick fires at all. Shown on screen to debug iOS Safari behavior.
+  // Diagnostic: incremented on every tap before any guard — tells us whether
+  // React has hydrated and onClick is actually firing.
   const [tapCount, setTapCount] = useState(0)
 
   useEffect(() => {
@@ -33,7 +58,6 @@ export function QrScannerClient() {
       setHttpsError(true)
       return
     }
-    engineRef.current = QrScanner.createQrEngine()
     return () => {
       stopCamera()
       if (gumTimerRef.current !== null) clearTimeout(gumTimerRef.current)
@@ -52,43 +76,39 @@ export function QrScannerClient() {
   }
 
   function handleStart() {
-    // Count every tap first — lets us see if onClick fires at all
-    setTapCount((n) => n + 1)
+    setTapCount((n) => n + 1) // first — proves onClick fires
 
     if (starting) return
 
-    if (!videoRef.current) {
-      setCameraError('Error interno: video no disponible. Recargá la página.')
+    const video = videoRef.current
+    if (!video) {
+      setCameraError('Error interno: referencia de video nula. Recargá la página.')
       return
     }
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraError('Este navegador no soporta acceso a la cámara.')
+      setCameraError(
+        'Cámara no disponible. Asegurate de acceder por HTTPS.',
+      )
       return
     }
 
-    const video = videoRef.current
     setCameraError(null)
     setStarting(true)
 
-    // Start a watchdog: if getUserMedia neither resolves nor rejects within
-    // GUM_TIMEOUT_MS, it has silently hung (common on iOS Safari via ngrok).
-    // Reset starting so the button is re-enabled and the user can retry.
+    // Watchdog: if getUserMedia never resolves or rejects (iOS Safari + ngrok
+    // silent hang), reset after GUM_TIMEOUT_MS so the user can retry.
     gumTimerRef.current = setTimeout(() => {
       gumTimerRef.current = null
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop())
-        streamRef.current = null
-      }
-      video.srcObject = null
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+      streamRef.current = null
+      if (videoRef.current) videoRef.current.srcObject = null
       setStarting(false)
-      setCameraError(
-        'La cámara tardó demasiado en responder. Tocá de nuevo para reintentar.',
-      )
+      setCameraError('La cámara tardó demasiado. Tocá de nuevo para reintentar.')
     }, GUM_TIMEOUT_MS)
 
-    // Call getUserMedia synchronously within the click handler so iOS Safari
-    // recognises it as a direct user-gesture response.
+    // getUserMedia called synchronously in the click handler (no async wrapper)
+    // so iOS Safari treats it as a direct user-gesture response.
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
       .then((stream) => {
@@ -105,20 +125,14 @@ export function QrScannerClient() {
         setScanning(true)
 
         scanTimerRef.current = setInterval(() => {
-          if (!videoRef.current || videoRef.current.readyState < 2) return
-          QrScanner.scanImage(videoRef.current, {
-            returnDetailedScanResult: true,
-            qrEngine: engineRef.current ?? undefined,
+          const v = videoRef.current
+          if (!v || v.readyState < 2) return
+          detectQRCode(v).then((data) => {
+            if (data && UUID_RE.test(data)) {
+              stopCamera()
+              router.push(`/reducir/${data}`)
+            }
           })
-            .then(({ data }) => {
-              if (UUID_RE.test(data)) {
-                stopCamera()
-                router.push(`/reducir/${data}`)
-              }
-            })
-            .catch(() => {
-              // No QR code in this frame — normal, keep scanning
-            })
         }, SCAN_INTERVAL_MS)
       })
       .catch((err) => {
@@ -126,11 +140,9 @@ export function QrScannerClient() {
           clearTimeout(gumTimerRef.current)
           gumTimerRef.current = null
         }
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach((t) => t.stop())
-          streamRef.current = null
-        }
-        video.srcObject = null
+        streamRef.current?.getTracks().forEach((t) => t.stop())
+        streamRef.current = null
+        if (videoRef.current) videoRef.current.srcObject = null
         setStarting(false)
         setCameraError(
           err instanceof Error ? err.message : 'No se pudo acceder a la cámara.',
@@ -162,7 +174,6 @@ export function QrScannerClient() {
           {cameraError && (
             <p className="text-sm text-destructive text-center">{cameraError}</p>
           )}
-          {/* Native button to guarantee iOS Safari registers taps */}
           <button
             onClick={handleStart}
             disabled={starting}
