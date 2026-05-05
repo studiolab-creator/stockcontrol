@@ -6,8 +6,9 @@ export default async function QrPage() {
   // ADMIN only — redirects OPERADOR to /dashboard, unauthenticated to /login
   await requireAdmin()
 
+  // Schema has no `activo` boolean field — all products are treated as active.
+  // The PLAN mentioned `activo: true` but the Prisma schema does not have this column.
   const products = await prisma.product.findMany({
-    where: { activo: true },
     select: { id: true, nombre: true },
     orderBy: { nombre: 'asc' },
   })
