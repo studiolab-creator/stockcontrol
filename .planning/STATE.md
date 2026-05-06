@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Completed Phase 4 Plan 04: Alertas Page (email config form + alertActive products table)"
-last_updated: "2026-05-06T21:58:46Z"
-last_activity: 2026-05-06 — Completed 04-04: /alertas page with saveGlobalAlertEmail action + email form + alertActive table
+stopped_at: "Completed Phase 4 Plan 05: Products Stock Column (Stock badge in /productos catalog table)"
+last_updated: "2026-05-06T22:10:00Z"
+last_activity: 2026-05-06 — Completed 04-05: Stock column with low-stock badge added to /productos catalog table
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -24,11 +24,11 @@ progress:
 ## Current Position
 
 Phase: 4 of 4 (Alerts)
-Plan: 5 of 6 in current phase
-Status: Executing — Wave 3 (04-05 next)
-Last activity: 2026-05-06 — Completed 04-04: /alertas page with saveGlobalAlertEmail action + email form + alertActive table
+Plan: 6 of 6 in current phase (all plans complete)
+Status: Wave 3 complete — all plans done
+Last activity: 2026-05-06 — Completed 04-05: Stock column with low-stock badge added to /productos catalog table
 
-Progress: █████████░ 91%
+Progress: ██████████ 100%
 
 ## Phase History
 
@@ -60,6 +60,7 @@ Progress: █████████░ 91%
 - **Alert placement (D-04)**: Alert logic lives OUTSIDE `prisma.$transaction` — after transaction closes, before `revalidatePath` calls. Stock commit happens first; email is best-effort.
 - **Alert reset (D-03)**: `alertActive` resets to `false` when `delta > 0 && stock > minStock && alertActive === true`. Plain `update` (no CAS) — recovery has no concurrent-race risk. Reset threshold is strict: `stock > minStock` (NOT >=).
 - **Manual path motivo**: Email params use `motivo: 'Entrada manual'` for addStockMovement path (vs 'Escaneo QR' for QR path).
+- **Visual badge threshold (D-05)**: `/productos` and `/dashboard` show "Stock bajo" badge when `stock <= minStock` (inclusive). Email alert fires at `stock < minStock` (exclusive). Visual is more inclusive than email — intentional per D-05.
 
 ### Pending Todos
 
@@ -71,5 +72,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-06T21:58:46Z
-Stopped at: Completed 04-04-PLAN.md — /alertas page replaced placeholder with email config form + alertActive products table, tsc passes.
+Last session: 2026-05-06T22:10:00Z
+Stopped at: Completed 04-05-PLAN.md — Stock column with stock <= minStock badge added to /productos catalog; tsc passes. All Phase 4 plans complete.
