@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Completed Phase 4 Plan 02: QR Reduction Alert (subtractStockViaQR CAS + email)"
-last_updated: "2026-05-06T22:08:00.000Z"
-last_activity: 2026-05-06 — Completed 04-02: alertActive CAS dedup + sendLowStockAlertWithRetry in subtractStockViaQR
+stopped_at: "Completed Phase 4 Plan 03: Manual Stock Alert (addStockMovement alertActive fire + reset)"
+last_updated: "2026-05-06T00:16:00.000Z"
+last_activity: 2026-05-06 — Completed 04-03: alertActive fire (CAS) + reset in addStockMovement
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 11
-  completed_plans: 8
+  completed_plans: 9
   percent: 82
 ---
 
@@ -24,9 +24,9 @@ progress:
 ## Current Position
 
 Phase: 4 of 4 (Alerts)
-Plan: 3 of 6 in current phase
-Status: Executing — Wave 2 (04-03 next)
-Last activity: 2026-05-06 — Completed 04-02: alertActive CAS + email in subtractStockViaQR
+Plan: 4 of 6 in current phase
+Status: Executing — Wave 2 (04-04 next)
+Last activity: 2026-05-06 — Completed 04-03: alertActive fire (CAS) + reset in addStockMovement
 
 Progress: ████████░░ 82%
 
@@ -58,6 +58,8 @@ Progress: ████████░░ 82%
 - **Alert CAS pattern**: `prisma.product.updateMany({ where: { id, alertActive: false }, data: { alertActive: true } })` — only the first concurrent caller gets `count=1`; guards `sendLowStockAlertWithRetry` call. Prevents duplicate emails on concurrent QR scans.
 - **Alert threshold**: `stock < minStock` (strict less-than, D-02). Stock equal to minStock does NOT fire alert.
 - **Alert placement (D-04)**: Alert logic lives OUTSIDE `prisma.$transaction` — after transaction closes, before `revalidatePath` calls. Stock commit happens first; email is best-effort.
+- **Alert reset (D-03)**: `alertActive` resets to `false` when `delta > 0 && stock > minStock && alertActive === true`. Plain `update` (no CAS) — recovery has no concurrent-race risk. Reset threshold is strict: `stock > minStock` (NOT >=).
+- **Manual path motivo**: Email params use `motivo: 'Entrada manual'` for addStockMovement path (vs 'Escaneo QR' for QR path).
 
 ### Pending Todos
 
@@ -69,5 +71,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-06T22:08:00.000Z
-Stopped at: Completed 04-02-PLAN.md — subtractStockViaQR modified with alertActive CAS + sendLowStockAlertWithRetry, tsc passes.
+Last session: 2026-05-06T00:16:00.000Z
+Stopped at: Completed 04-03-PLAN.md — addStockMovement modified with alertActive CAS fire + plain-update reset, tsc passes.
