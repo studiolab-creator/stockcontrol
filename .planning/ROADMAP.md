@@ -70,17 +70,34 @@ Wave 2 *(blocked on Wave 1 completion)*:
 ---
 
 ### Phase 4: Alerts
-**Goal**: Las alertas de stock bajo funcionan end-to-end: cuando el stock cae por debajo de `minStock` se envía email (Resend) una sola vez por cruce descendente; `alertActive` se resetea cuando el stock se recupera; indicadores visuales en dashboard y catálogo muestran los productos en alerta; ADMIN configura los emails receptores por producto.
+**Goal**: Las alertas de stock bajo funcionan end-to-end: cuando el stock cae por debajo de `minStock` se envía email (Resend) una sola vez por cruce descendente; `alertActive` se resetea cuando el stock se recupera; indicadores visuales en dashboard y catálogo muestran los productos en alerta; ADMIN configura el email receptor global en /alertas.
 **Depends on**: Phase 3
 **Requirements**: ALERT-01, ALERT-02, ALERT-03, ALERT-04, ALERT-05
-**Status**: Ready to plan
+**Status**: Ready to execute
 **Success Criteria** (what must be TRUE):
-  1. Al reducir stock bajo minStock, se envía email via Resend a los emails de AlertConfig del producto, y alertActive se setea a true
+  1. Al reducir stock bajo minStock, se envía email via Resend al email global configurado en AppConfig, y alertActive se setea a true
   2. No se envía email duplicado mientras alertActive = true (dedup funcionando)
   3. Al subir stock sobre minStock, alertActive se resetea a false
-  4. ADMIN puede ver y editar la lista de emails receptores en /alertas
-  5. Productos con alertActive = true muestran badge/indicador visual en dashboard y catálogo
-**Plans**: TBD
+  4. ADMIN puede ver y editar el email receptor global en /alertas
+  5. Productos con stock <= minStock muestran badge "Stock bajo" en /dashboard y /productos
+**Plans**: 6 plans in 4 waves
+
+**Cross-cutting constraints:**
+- Email sent OUTSIDE prisma.$transaction — stock commit always succeeds; email post-commit (D-04)
+- alertActive flip uses CAS (`updateMany WHERE alertActive=false`) — prevents duplicate sends on concurrent scans
 
 Plans:
-- [ ] TBD
+
+Wave 0 — Infrastructure:
+- [ ] 04-00-PLAN.md — Install resend, add AppConfig model to schema, db push + prisma generate
+
+Wave 1 — Email utility:
+- [ ] 04-01-PLAN.md — Create src/lib/email.ts with sendLowStockAlertWithRetry()
+
+Wave 2 — Alert logic in stock actions (parallel):
+- [ ] 04-02-PLAN.md — Add alertActive CAS + email to subtractStockViaQR (QR path)
+- [ ] 04-03-PLAN.md — Add alertActive CAS + email + reset to addStockMovement (manual path)
+
+Wave 3 — UI (parallel):
+- [ ] 04-04-PLAN.md — /alertas page + saveGlobalAlertEmail Server Action
+- [ ] 04-05-PLAN.md — Add Stock column + low-stock badge to /productos catalog

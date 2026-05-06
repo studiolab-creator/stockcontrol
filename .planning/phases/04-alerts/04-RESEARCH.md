@@ -509,17 +509,19 @@ import { prisma } from '@/lib/prisma'
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Resend `from` email address for production**
    - What we know: Resend requires a verified domain to send from a custom address
    - What's unclear: Which domain will be verified for production deployment (Railway/Render)
    - Recommendation: Use `onboarding@resend.dev` during development/testing; document that ADMIN must configure a verified domain before production use. Wave 0 task should note this.
+   - RESOLVED: Use `onboarding@resend.dev` for dev/testing (hard-coded in email.ts). Production domain must be verified in the Resend dashboard before deploying; Wave 0 documents this as a manual step.
 
 2. **RESEND_API_KEY env var**
    - What we know: Must be set in `.env.local` (dev) and Railway/Render env vars (prod)
    - What's unclear: Whether it exists in the current `.env.local`
    - Recommendation: Wave 0 task checks for `RESEND_API_KEY` and documents where to get it (resend.com/api-keys)
+   - RESOLVED: Wave 0 task (04-00 T1) documents obtaining the key from resend.com/api-keys and adding it to `.env.local`. If absent, email.ts logs a warning and skips sending (no crash).
 
 ---
 
