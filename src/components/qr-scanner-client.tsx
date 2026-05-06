@@ -42,23 +42,21 @@ export function QrScannerClient() {
   const gumTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router = useRouter()
 
-  // All browser-dependent flags start as null so the server render and first
-  // client render produce identical output — no hydration mismatch.
-  const [httpsOk, setHttpsOk] = useState<boolean | null>(null)
-  const [hasCamera, setHasCamera] = useState<boolean | null>(null)
-
+  // httpsError starts false so the button is rendered in the server HTML and
+  // visible even before JavaScript loads on slow connections. useEffect checks
+  // the actual protocol and redirects to the error UI if needed.
+  const [httpsError, setHttpsError] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [scanning, setScanning] = useState(false)
   const [starting, setStarting] = useState(false)
-  // Diagnostic counter — FIRST thing in handleStart. If this never increments
-  // after tapping, onClick is not firing (hydration/JavaScript issue).
+  // tapCount is the hydration/JS liveness diagnostic — incremented before any
+  // guard, so it proves whether onClick is actually firing.
   const [tapCount, setTapCount] = useState(0)
 
   useEffect(() => {
     const isSecure =
       location.protocol === 'https:' || location.hostname === 'localhost'
-    setHttpsOk(isSecure)
-    setHasCamera(Boolean(navigator.mediaDevices?.getUserMedia))
+    if (!isSecure) setHttpsError(true)
     return () => {
       stopCamera()
       if (gumTimerRef.current !== null) clearTimeout(gumTimerRef.current)
@@ -145,18 +143,7 @@ export function QrScannerClient() {
       })
   }
 
-  // httpsOk===null means we haven't run on the client yet — show nothing to
-  // avoid flash of wrong content. After useEffect it becomes true or false.
-  if (httpsOk === null) {
-    return (
-      <div className="flex flex-col gap-4">
-        <div className="w-full max-w-sm mx-auto aspect-video rounded-lg bg-muted/40 border border-border" />
-        <p className="text-center text-sm text-muted-foreground">Cargando...</p>
-      </div>
-    )
-  }
-
-  if (httpsOk === false) {
+  if (httpsError) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <p className="text-base font-semibold text-foreground mb-1">
@@ -175,10 +162,9 @@ export function QrScannerClient() {
         <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
       </div>
 
-      {/* Always-visible diagnostic — stays outside scanning conditional */}
+      {/* Diagnostic — always visible, outside the scanning conditional */}
       <p className="text-xs text-muted-foreground text-center">
-        toques: {tapCount} | scanning: {String(scanning)} | starting: {String(starting)} |{' '}
-        cam: {hasCamera === null ? '?' : hasCamera ? 'ok' : 'no'}
+        toques: {tapCount} | scanning: {String(scanning)} | starting: {String(starting)}
       </p>
 
       {!scanning && (
