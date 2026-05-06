@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Completed Phase 4 Plan 01: Email Utility (src/lib/email.ts)"
-last_updated: "2026-05-06T22:00:00.000Z"
-last_activity: 2026-05-06 — Completed 04-01: server-only email utility with Resend retry
+stopped_at: "Completed Phase 4 Plan 02: QR Reduction Alert (subtractStockViaQR CAS + email)"
+last_updated: "2026-05-06T22:08:00.000Z"
+last_activity: 2026-05-06 — Completed 04-02: alertActive CAS dedup + sendLowStockAlertWithRetry in subtractStockViaQR
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 11
-  completed_plans: 7
-  percent: 77
+  completed_plans: 8
+  percent: 82
 ---
 
 # Project State
@@ -24,11 +24,11 @@ progress:
 ## Current Position
 
 Phase: 4 of 4 (Alerts)
-Plan: 2 of 6 in current phase
-Status: Executing — Wave 2 (04-02, 04-03 next)
-Last activity: 2026-05-06 — Completed 04-01: src/lib/email.ts with sendLowStockAlertWithRetry
+Plan: 3 of 6 in current phase
+Status: Executing — Wave 2 (04-03 next)
+Last activity: 2026-05-06 — Completed 04-02: alertActive CAS + email in subtractStockViaQR
 
-Progress: ███████░░░ 77%
+Progress: ████████░░ 82%
 
 ## Phase History
 
@@ -55,6 +55,9 @@ Progress: ███████░░░ 77%
 - **AppConfig**: Global key-value store (`key String @id`) in DB. `alert_email` key stores single global alert recipient (D-07). Separate from per-product `AlertConfig`.
 - **Resend SDK**: resend@6.12.3 installed. Requires `RESEND_API_KEY` env var. Use `from: onboarding@resend.dev` for dev (no domain verification needed).
 - **Resend v6 idempotency**: `idempotencyKey` is the second argument to `resend.emails.send(payload, { idempotencyKey })` — not spread into the payload object.
+- **Alert CAS pattern**: `prisma.product.updateMany({ where: { id, alertActive: false }, data: { alertActive: true } })` — only the first concurrent caller gets `count=1`; guards `sendLowStockAlertWithRetry` call. Prevents duplicate emails on concurrent QR scans.
+- **Alert threshold**: `stock < minStock` (strict less-than, D-02). Stock equal to minStock does NOT fire alert.
+- **Alert placement (D-04)**: Alert logic lives OUTSIDE `prisma.$transaction` — after transaction closes, before `revalidatePath` calls. Stock commit happens first; email is best-effort.
 
 ### Pending Todos
 
@@ -66,5 +69,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-06T22:00:00.000Z
-Stopped at: Completed 04-01-PLAN.md — src/lib/email.ts created with sendLowStockAlertWithRetry, tsc passes.
+Last session: 2026-05-06T22:08:00.000Z
+Stopped at: Completed 04-02-PLAN.md — subtractStockViaQR modified with alertActive CAS + sendLowStockAlertWithRetry, tsc passes.
