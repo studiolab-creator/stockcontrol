@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser } from '@/lib/dal'
+import { sendLowStockAlertWithRetry } from '@/lib/email'
 
 const ReduceSchema = z.object({
   productId: z.string().uuid(),
@@ -65,10 +66,41 @@ export async function subtractStockViaQR(
       })
     })
 
+    // ── Phase 4: alertActive post-commit logic (D-01, D-02, D-04) ──────────────
+    // Runs OUTSIDE the transaction — stock is already committed at this point.
+    // Single indexed PK read to get minStock, alertActive, and confirmed stock.
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { nombre: true, minStock: true, alertActive: true, stock: true },
+    })
+
+    if (product && product.stock < product.minStock) {
+      // D-02: strict threshold — stock < minStock (NOT <=)
+      // CAS: updateMany WHERE alertActive=false — at most one concurrent caller gets count=1
+      // Prevents duplicate alerts when two QR scans happen simultaneously (RESEARCH Pitfall 1)
+      const result = await prisma.product.updateMany({
+        where: { id: productId, alertActive: false },
+        data: { alertActive: true },
+      })
+      if (result.count === 1) {
+        // This caller won the CAS — send the alert email
+        // D-04: email sent after DB commit; if Resend fails, alertActive=true prevents resend
+        await sendLowStockAlertWithRetry({
+          productId,
+          productName: product.nombre,
+          currentStock: product.stock,
+          minStock: product.minStock,
+          motivo: 'Escaneo QR',
+        })
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────────
+
     // Revalidate all views that display stock or movement data
     revalidatePath('/dashboard')
     revalidatePath(`/productos/${productId}`)
     revalidatePath('/historial')
+    revalidatePath('/alertas')
     // Return success marker — page Client Component checks state?.success to show confirmation
     return { success: true }
 
