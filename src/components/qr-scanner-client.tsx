@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
 
 // No top-level qr-scanner import — its Worker/blob-URL init silently aborts
 // on iOS Safari under ngrok. Use native BarcodeDetector on iOS 17+ / Chrome 88+
@@ -49,10 +50,6 @@ export function QrScannerClient() {
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [scanning, setScanning] = useState(false)
   const [starting, setStarting] = useState(false)
-  // tapCount is the hydration/JS liveness diagnostic — incremented before any
-  // guard, so it proves whether onClick is actually firing.
-  const [tapCount, setTapCount] = useState(0)
-
   useEffect(() => {
     const isSecure =
       location.protocol === 'https:' || location.hostname === 'localhost'
@@ -75,8 +72,6 @@ export function QrScannerClient() {
   }
 
   function handleStart() {
-    setTapCount((n) => n + 1)
-
     if (starting) return
 
     const video = videoRef.current
@@ -162,33 +157,14 @@ export function QrScannerClient() {
         <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
       </div>
 
-      {/* Diagnostic — always visible, outside the scanning conditional */}
-      <p className="text-xs text-muted-foreground text-center">
-        toques: {tapCount} | scanning: {String(scanning)} | starting: {String(starting)}
-      </p>
-
       {!scanning && (
         <div className="flex flex-col items-center gap-3">
           {cameraError && (
             <p className="text-sm text-destructive text-center">{cameraError}</p>
           )}
-          <button
-            onClick={handleStart}
-            disabled={starting}
-            style={{
-              padding: '12px 32px',
-              background: '#1d4ed8',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              opacity: starting ? 0.5 : 1,
-            }}
-          >
+          <Button onClick={handleStart} disabled={starting}>
             {starting ? 'Iniciando...' : cameraError ? 'Reintentar' : 'Iniciar cámara'}
-          </button>
+          </Button>
         </div>
       )}
 
