@@ -1,0 +1,142 @@
+// prisma/schema.prisma
+// StockControl — Complete schema for all 4 phases
+// Architecture constraints from CLAUDE.md are encoded in comments.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // PRISMA 7.x: Connection URLs are configured in prisma.config.ts (not here).
+  // DATABASE_URL = pooled connection (runtime via PgBouncer)
+  // DIRECT_URL   = direct connection (used by prisma db push / migrate dev)
+  // See prisma.config.ts for URL configuration.
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  OPERADOR
+}
+
+enum ProductType {
+  TERMINADO
+  INSUMO
+}
+
+// ─── USERS (Phase 1) ─────────────────────────────────────────────────────────
+// Login identifier is `username` ONLY. Email is NOT used for login — it exists
+// on AlertConfig (Phase 4) for notification recipients, never on User.
+// CLAUDE.md constraint: Auth identifier is username + password only.
+
+model User {
+  id           String     @id @default(uuid())
+  username     String     @unique
+  passwordHash String
+  role         Role       @default(OPERADOR)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  movements    Movement[]
+
+  @@index([username])
+}
+
+// ─── CATEGORIES (Phase 1) ────────────────────────────────────────────────────
+// D-04: Admin-managed predefined list; products select from it.
+// D-05: Category assignment on products is optional.
+// D-06: One category per product (FK on Product row, no join table).
+
+model Category {
+  id        String    @id @default(uuid())
+  nombre    String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  products  Product[]
+}
+
+// ─── PRODUCTS (Phase 1 + schema ready for Phases 2-4) ───────────────────────
+// CLAUDE.md: Product.id MUST be UUID (immutable — used in QR codes, Phase 3).
+//            Never use name/slug in QR codes.
+// CLAUDE.md: alertActive flag for alert deduplication (Phase 4).
+// D-06: categoriaId is nullable FK (optional category, one per product).
+// D-07: sku is optional internal code field.
+// D-08: No image field.
+// D-09: unidad is optional free-text unit of measure.
+// PROD-04: minStock is the alert threshold.
+// Phase 2: stock is a denormalized cache; mutations MUST use atomic SQL
+//          (UPDATE ... SET stock = stock - n WHERE stock >= n).
+
+model Product {
+  id           String      @id @default(uuid())
+  nombre       String
+  descripcion  String?
+  tipo         ProductType
+  categoriaId  String?
+  sku          String?
+  unidad       String?
+  stock        Int         @default(0)
+  minStock     Int         @default(0)
+  alertActive  Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  categoria    Category?   @relation(fields: [categoriaId], references: [id])
+  movements    Movement[]
+  alertConfig  AlertConfig?
+
+  @@index([categoriaId])
+  @@index([tipo])
+}
+
+// ─── MOVEMENTS (Phase 2 — append-only ledger) ────────────────────────────────
+// CLAUDE.md CONSTRAINT: This table is append-only.
+// NO UPDATE or DELETE ever on Movement rows. Corrections = new rows.
+// delta: positive = stock in, negative = stock out.
+
+model Movement {
+  id        String   @id @default(uuid())
+  productId String
+  userId    String
+  delta     Int
+  motivo    String?
+  createdAt DateTime @default(now())
+
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([productId, createdAt(sort: Desc)])
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+}
+
+// ─── ALERT CONFIG (Phase 4) ──────────────────────────────────────────────────
+// Per-product email recipient list for low-stock alerts.
+// CLAUDE.md: alertActive on Product fires once per downward crossing;
+//            resets when stock recovers above minStock.
+
+model AlertConfig {
+  id        String   @id @default(uuid())
+  productId String   @unique
+  emails    String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+// ─── APP CONFIG (Phase 4) ─────────────────────────────────────────────────────
+// Generic key/value store for runtime-editable configuration.
+// 'alert_email' key holds the global low-stock alert recipient email.
+// key is the PK (natural identifier) — no redundant UUID needed.
+// D-07: Single global email destination stored here. AlertConfig per-product is NOT used.
+
+model AppConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
