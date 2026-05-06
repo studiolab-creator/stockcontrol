@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: "Phase 4 plans created and verified. Ready to execute Phase 4: Alerts."
-last_updated: "2026-05-06T21:15:06.322Z"
-last_activity: 2026-05-06 — Phase 4 planned: 6 plans in 4 waves (04-00 through 04-05); VERIFICATION PASSED
+status: executing
+stopped_at: "Completed Phase 4 Plan 00: Install Resend + AppConfig Schema"
+last_updated: "2026-05-06T21:30:00.000Z"
+last_activity: 2026-05-06 — Completed 04-00 (resend installed, AppConfig model in DB)
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 11
-  completed_plans: 5
+  completed_plans: 6
   percent: 75
 ---
 
@@ -24,9 +24,9 @@ progress:
 ## Current Position
 
 Phase: 4 of 4 (Alerts)
-Plan: 0 of 6 in current phase
-Status: Ready to execute
-Last activity: 2026-05-06 — Phase 4 planned: 6 plans in 4 waves (04-00 through 04-05); VERIFICATION PASSED
+Plan: 1 of 6 in current phase
+Status: Executing — Wave 1 (04-01 next)
+Last activity: 2026-05-06 — Completed 04-00: resend installed, AppConfig in DB
 
 Progress: ███████░░░ 75%
 
@@ -52,6 +52,8 @@ Progress: ███████░░░ 75%
 - **Prisma client**: Generated to `src/generated/prisma/` (not `node_modules/@prisma/client`).
 - **Next.js**: App Router with Server Actions. Auth via custom JWT (jose + bcryptjs). No separate API layer for app logic except QR generation.
 - **Tailwind v4**: Custom design system with `print:hidden` / `print:block` variants working.
+- **AppConfig**: Global key-value store (`key String @id`) in DB. `alert_email` key stores single global alert recipient (D-07). Separate from per-product `AlertConfig`.
+- **Resend SDK**: resend@6.12.3 installed. Requires `RESEND_API_KEY` env var. Use `from: onboarding@resend.dev` for dev (no domain verification needed).
 
 ### Pending Todos
 
@@ -63,5 +65,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-06T21:15:06.317Z
-Stopped at: Planning documents created. Ready to plan Phase 4: Alerts.
+Last session: 2026-05-06T21:30:00.000Z
+Stopped at: Completed 04-00-PLAN.md — resend installed, AppConfig model pushed to Neon, Prisma client regenerated.
