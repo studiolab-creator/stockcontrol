@@ -22,18 +22,18 @@ result: PASS — escaneo detecta el QR y navega automáticamente
 
 ### 3. El QR codifica solo el UUID
 expected: Descargar el PNG desde /qr → leer con app de QR externa → el contenido decodificado es exactamente el UUID del producto (no el nombre ni ningún otro campo)
-result: [pending]
+result: PASS — contenido decodificado es únicamente el UUID
 
 ### 4. Print preview muestra solo la grilla QR
 expected: Seleccionar productos en /qr → click "Imprimir seleccionados" → el dialog de impresión del OS muestra solo la grilla de 4 columnas (sin sidebar, sin controles)
-result: [pending]
+result: PASS — print preview muestra únicamente la grilla de QRs
 
 ## Summary
 
 total: 4
-passed: 2
+passed: 4
 issues: 0
-pending: 2
+pending: 0
 skipped: 0
 blocked: 0
 
@@ -44,5 +44,7 @@ blocked: 0
   sin minificar que se descartan en conexiones lentas (ngrok / WiFi). En producción los bundles
   son ~500 KB y cargan correctamente.
 - Escáner usa native BarcodeDetector (iOS 17+ / Chrome 88+); qr-scanner se carga lazy como fallback.
+- Print: sidebar/bottom-nav/toaster envueltos en print:hidden en el layout; padding de main
+  zeroed en print para que la grilla ocupe los márgenes A4.
 
 ## Gaps
