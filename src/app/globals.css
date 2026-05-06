@@ -134,4 +134,7 @@
     size: A4;
     margin: 10mm;
   }
+
+  /* Strip padding so the QR grid fills the A4 page margins */
+  main { padding: 0 !important; }
 }
