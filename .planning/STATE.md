@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Completed Phase 4 Plan 00: Install Resend + AppConfig Schema"
-last_updated: "2026-05-06T21:30:00.000Z"
-last_activity: 2026-05-06 — Completed 04-00 (resend installed, AppConfig model in DB)
+stopped_at: "Completed Phase 4 Plan 01: Email Utility (src/lib/email.ts)"
+last_updated: "2026-05-06T22:00:00.000Z"
+last_activity: 2026-05-06 — Completed 04-01: server-only email utility with Resend retry
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 11
-  completed_plans: 6
-  percent: 75
+  completed_plans: 7
+  percent: 77
 ---
 
 # Project State
@@ -24,11 +24,11 @@ progress:
 ## Current Position
 
 Phase: 4 of 4 (Alerts)
-Plan: 1 of 6 in current phase
-Status: Executing — Wave 1 (04-01 next)
-Last activity: 2026-05-06 — Completed 04-00: resend installed, AppConfig in DB
+Plan: 2 of 6 in current phase
+Status: Executing — Wave 2 (04-02, 04-03 next)
+Last activity: 2026-05-06 — Completed 04-01: src/lib/email.ts with sendLowStockAlertWithRetry
 
-Progress: ███████░░░ 75%
+Progress: ███████░░░ 77%
 
 ## Phase History
 
@@ -54,6 +54,7 @@ Progress: ███████░░░ 75%
 - **Tailwind v4**: Custom design system with `print:hidden` / `print:block` variants working.
 - **AppConfig**: Global key-value store (`key String @id`) in DB. `alert_email` key stores single global alert recipient (D-07). Separate from per-product `AlertConfig`.
 - **Resend SDK**: resend@6.12.3 installed. Requires `RESEND_API_KEY` env var. Use `from: onboarding@resend.dev` for dev (no domain verification needed).
+- **Resend v6 idempotency**: `idempotencyKey` is the second argument to `resend.emails.send(payload, { idempotencyKey })` — not spread into the payload object.
 
 ### Pending Todos
 
@@ -65,5 +66,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-06T21:30:00.000Z
-Stopped at: Completed 04-00-PLAN.md — resend installed, AppConfig model pushed to Neon, Prisma client regenerated.
+Last session: 2026-05-06T22:00:00.000Z
+Stopped at: Completed 04-01-PLAN.md — src/lib/email.ts created with sendLowStockAlertWithRetry, tsc passes.
