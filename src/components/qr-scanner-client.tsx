@@ -2,10 +2,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
-// No top-level qr-scanner import — loading it at module-init time can abort
-// silently on iOS Safari (Worker/blob-URL setup), breaking hydration.
-// Use native BarcodeDetector (iOS 17+ / Chrome 88+) and lazy-load qr-scanner
-// only as a fallback.
+// No top-level qr-scanner import — its Worker/blob-URL init silently aborts
+// on iOS Safari under ngrok. Use native BarcodeDetector on iOS 17+ / Chrome 88+
+// and lazy-load qr-scanner as a fallback only when needed.
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const SCAN_INTERVAL_MS = 300
@@ -36,44 +35,30 @@ async function detectQRCode(video: HTMLVideoElement): Promise<string | null> {
   }
 }
 
-// Outer shell: renders a skeleton on the server, mounts the real component
-// only on the client. This eliminates ALL hydration mismatches — navigator,
-// mediaDevices, and any other browser-only values are never evaluated during SSR.
 export function QrScannerClient() {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-
-  if (!mounted) {
-    return (
-      <div className="flex flex-col gap-4">
-        <div className="w-full max-w-sm mx-auto aspect-video rounded-lg bg-muted/40 border border-border" />
-        <div className="flex justify-center">
-          <div className="h-8 w-32 rounded-lg bg-muted animate-pulse" />
-        </div>
-      </div>
-    )
-  }
-
-  return <QrScannerInner />
-}
-
-// Inner component — only ever rendered on the client, so all browser APIs are safe.
-function QrScannerInner() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const scanTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const gumTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router = useRouter()
-  const [httpsError, setHttpsError] = useState(false)
+
+  // All browser-dependent flags start as null so the server render and first
+  // client render produce identical output — no hydration mismatch.
+  const [httpsOk, setHttpsOk] = useState<boolean | null>(null)
+  const [hasCamera, setHasCamera] = useState<boolean | null>(null)
+
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [scanning, setScanning] = useState(false)
   const [starting, setStarting] = useState(false)
+  // Diagnostic counter — FIRST thing in handleStart. If this never increments
+  // after tapping, onClick is not firing (hydration/JavaScript issue).
   const [tapCount, setTapCount] = useState(0)
 
   useEffect(() => {
     const isSecure =
       location.protocol === 'https:' || location.hostname === 'localhost'
-    if (!isSecure) setHttpsError(true)
+    setHttpsOk(isSecure)
+    setHasCamera(Boolean(navigator.mediaDevices?.getUserMedia))
     return () => {
       stopCamera()
       if (gumTimerRef.current !== null) clearTimeout(gumTimerRef.current)
@@ -160,7 +145,18 @@ function QrScannerInner() {
       })
   }
 
-  if (httpsError) {
+  // httpsOk===null means we haven't run on the client yet — show nothing to
+  // avoid flash of wrong content. After useEffect it becomes true or false.
+  if (httpsOk === null) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="w-full max-w-sm mx-auto aspect-video rounded-lg bg-muted/40 border border-border" />
+        <p className="text-center text-sm text-muted-foreground">Cargando...</p>
+      </div>
+    )
+  }
+
+  if (httpsOk === false) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <p className="text-base font-semibold text-foreground mb-1">
@@ -179,6 +175,12 @@ function QrScannerInner() {
         <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
       </div>
 
+      {/* Always-visible diagnostic — stays outside scanning conditional */}
+      <p className="text-xs text-muted-foreground text-center">
+        toques: {tapCount} | scanning: {String(scanning)} | starting: {String(starting)} |{' '}
+        cam: {hasCamera === null ? '?' : hasCamera ? 'ok' : 'no'}
+      </p>
+
       {!scanning && (
         <div className="flex flex-col items-center gap-3">
           {cameraError && (
@@ -187,14 +189,20 @@ function QrScannerInner() {
           <button
             onClick={handleStart}
             disabled={starting}
-            className="inline-flex h-8 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:pointer-events-none disabled:opacity-50"
+            style={{
+              padding: '12px 32px',
+              background: '#1d4ed8',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              opacity: starting ? 0.5 : 1,
+            }}
           >
             {starting ? 'Iniciando...' : cameraError ? 'Reintentar' : 'Iniciar cámara'}
           </button>
-          <p className="text-xs text-muted-foreground">
-            toques: {tapCount} | ref: {videoRef.current ? 'ok' : 'null'} |{' '}
-            {navigator.mediaDevices ? 'mediaDevices ok' : 'sin mediaDevices'}
-          </p>
         </div>
       )}
 
