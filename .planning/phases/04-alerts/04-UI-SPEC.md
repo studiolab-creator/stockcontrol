@@ -54,13 +54,16 @@ Derived from existing page headings and body text patterns across the app.
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px (text-sm) | 400 (regular) | 1.5 |
-| Label | 14px (text-sm) | 500 (medium) | 1.5 |
+| Label | 14px (text-sm) | 600 (semibold) | 1.5 |
 | Heading (page) | 20px (text-xl) | 600 (semibold) | 1.2 |
 | Subheading / card title | 16px (text-base) | 600 (semibold) | 1.2 |
+
+Weights used: 400 (regular) and 600 (semibold) only — 2 weights maximum.
 
 Notes:
 - Page headings use `text-xl font-semibold text-foreground` — established pattern from all existing pages (`/dashboard`, `/productos`, current `/alertas` placeholder).
 - Muted secondary text uses `text-sm text-muted-foreground` — used for descriptions, empty state body, table secondary values.
+- Label visual distinction from Body is achieved via color (`text-foreground` semibold vs `text-muted-foreground` regular), not a separate weight.
 - Badge text is 12px (text-xs, font-medium) — baked into `badge.tsx` cva definition.
 
 Source: `src/app/(app)/dashboard/page.tsx`, `src/app/(app)/productos/page.tsx`, `src/components/dashboard-client.tsx`.
