@@ -96,9 +96,9 @@ export async function addStockMovement(
             motivo: 'Entrada manual',
           })
         }
-      } else if (delta > 0 && product.stock > product.minStock && product.alertActive) {
-        // Branch B: stock recovered above minStock — reset flag so next crossing fires a new alert
-        // D-03: reset only when stock STRICTLY ABOVE minStock (NOT >=)
+      } else if (delta > 0 && product.stock >= product.minStock && product.alertActive) {
+        // Branch B: stock recovered to or above minStock — reset flag so next crossing fires a new alert
+        // D-03 corrected: reset when stock >= minStock to prevent stuck alertActive at stock == minStock
         // Plain update (no CAS needed — stock recovery is not a concurrent-race scenario)
         await prisma.product.update({
           where: { id: productId },

@@ -121,6 +121,9 @@ export async function sendLowStockAlertWithRetry(
       subject: `⚠️ Stock bajo: ${params.productName}`,
       html: buildAlertEmailHtml({ ...params, productUrl }),
     },
-    `stock-alert/${params.productId}`,
+    // Time-bucketed key (1-hour window): prevents duplicates within a retry burst
+    // but allows a new alert to fire on the next stock crossing after recovery.
+    // alertActive CAS is the primary dedup — this is a secondary guard for Resend retries.
+    `stock-alert/${params.productId}/${Math.floor(Date.now() / 3_600_000)}`,
   )
 }
