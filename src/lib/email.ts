@@ -2,10 +2,15 @@ import 'server-only'
 import { Resend } from 'resend'
 import { prisma } from '@/lib/prisma'
 
-// Module-level singleton — initialized once per server process.
-// RESEND_API_KEY must be set in .env.local (dev) and platform env vars (prod).
-// If the key is absent, Resend will throw on first send — caught by sendWithRetry.
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy-initialized — avoids build-time failure when RESEND_API_KEY is not set.
+// next build imports all server modules; constructing Resend with undefined key throws.
+let _resend: Resend | null = null
+
+function getResend(): Resend | null {
+  if (!process.env.RESEND_API_KEY) return null
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+  return _resend
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -20,14 +25,19 @@ export type SendLowStockAlertParams = {
 // ─── Internal: retry wrapper ─────────────────────────────────────────────────
 
 async function sendWithRetry(
-  payload: Parameters<typeof resend.emails.send>[0],
+  payload: Parameters<Resend['emails']['send']>[0],
   idempotencyKey: string,
   maxAttempts = 3,
 ): Promise<void> {
+  const client = getResend()
+  if (!client) {
+    console.warn('[alert] RESEND_API_KEY not configured — skipping email send')
+    return
+  }
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     // idempotencyKey is passed as the second argument (CreateEmailRequestOptions),
     // not spread into the payload — the Resend SDK v6 separates email options from request options.
-    const { error } = await resend.emails.send(payload, { idempotencyKey })
+    const { error } = await client.emails.send(payload, { idempotencyKey })
     if (!error) return
     const isRetryable =
       error.statusCode === 429 || error.statusCode === 500
