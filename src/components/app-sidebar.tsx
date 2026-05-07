@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { LayoutDashboard, Package, History, QrCode, Bell, LogOut, ScanLine } from 'lucide-react'
+import { LayoutDashboard, Package, History, QrCode, Bell, LogOut, ScanLine, Users } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -16,12 +16,13 @@ import { logoutAction } from '@/app/(auth)/login/actions'
 import { getAuthenticatedUser } from '@/lib/dal'
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/productos', label: 'Productos', icon: Package },
-  { href: '/historial', label: 'Historial', icon: History },
-  { href: '/qr', label: 'Gestión QR', icon: QrCode },
-  { href: '/escanear', label: 'Escanear QR', icon: ScanLine },
-  { href: '/alertas', label: 'Config. Alertas', icon: Bell },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: false },
+  { href: '/productos', label: 'Productos', icon: Package, adminOnly: false },
+  { href: '/historial', label: 'Historial', icon: History, adminOnly: false },
+  { href: '/qr', label: 'Gestión QR', icon: QrCode, adminOnly: true },
+  { href: '/escanear', label: 'Escanear QR', icon: ScanLine, adminOnly: false },
+  { href: '/alertas', label: 'Config. Alertas', icon: Bell, adminOnly: true },
+  { href: '/usuarios', label: 'Usuarios', icon: Users, adminOnly: true },
 ]
 
 export async function AppSidebar() {
@@ -42,7 +43,7 @@ export async function AppSidebar() {
         {/* Main navigation — aria-label for accessibility per UI-SPEC */}
         <nav aria-label="Navegación principal">
           <SidebarMenu>
-            {navItems.map((item) => (
+            {navItems.filter((item) => !item.adminOnly || user.role === 'ADMIN').map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   render={

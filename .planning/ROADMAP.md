@@ -9,7 +9,7 @@ Sistema web de control de stock para equipo interno (3-10 personas). El roadmap 
 - [x] **Phase 1: Foundation** - Auth (username+password), catálogo de productos con categorías, roles ADMIN/OPERADOR
 - [x] **Phase 2: Core Ledger** - Motor de stock atómico, historial de movimientos, dashboard
 - [x] **Phase 3: QR Workflow** - Generación de QR, pantalla de impresión, escáner de cámara, reducción atómica vía QR
-- [ ] **Phase 4: Alerts** - Email de stock bajo con dedup, indicadores visuales, configuración por producto
+- [x] **Phase 4: Alerts** - Email de stock bajo con dedup, indicadores visuales, configuración por producto
 
 ## Phase Details
 
@@ -73,31 +73,27 @@ Wave 2 *(blocked on Wave 1 completion)*:
 **Goal**: Las alertas de stock bajo funcionan end-to-end: cuando el stock cae por debajo de `minStock` se envía email (Resend) una sola vez por cruce descendente; `alertActive` se resetea cuando el stock se recupera; indicadores visuales en dashboard y catálogo muestran los productos en alerta; ADMIN configura el email receptor global en /alertas.
 **Depends on**: Phase 3
 **Requirements**: ALERT-01, ALERT-02, ALERT-03, ALERT-04, ALERT-05
-**Status**: Ready to execute
+**Status**: Done ✓ (verified 2026-05-07, UAT complete)
 **Success Criteria** (what must be TRUE):
-  1. Al reducir stock bajo minStock, se envía email via Resend al email global configurado en AppConfig, y alertActive se setea a true
-  2. No se envía email duplicado mientras alertActive = true (dedup funcionando)
-  3. Al subir stock sobre minStock, alertActive se resetea a false
-  4. ADMIN puede ver y editar el email receptor global en /alertas
-  5. Productos con stock <= minStock muestran badge "Stock bajo" en /dashboard y /productos
+  1. Al reducir stock bajo minStock, se envía email via Resend al email global configurado en AppConfig, y alertActive se setea a true ✓
+  2. No se envía email duplicado mientras alertActive = true (dedup funcionando) ✓
+  3. Al subir stock sobre minStock, alertActive se resetea a false ✓
+  4. ADMIN puede ver y editar el email receptor global en /alertas ✓
+  5. Productos con stock <= minStock muestran badge "Stock bajo" en /dashboard y /productos ✓
 **Plans**: 6 plans in 4 waves
-
-**Cross-cutting constraints:**
-- Email sent OUTSIDE prisma.$transaction — stock commit always succeeds; email post-commit (D-04)
-- alertActive flip uses CAS (`updateMany WHERE alertActive=false`) — prevents duplicate sends on concurrent scans
 
 Plans:
 
 Wave 0 — Infrastructure:
-- [ ] 04-00-PLAN.md — Install resend, add AppConfig model to schema, db push + prisma generate
+- [x] 04-00-PLAN.md — Install resend, add AppConfig model to schema, db push + prisma generate
 
 Wave 1 — Email utility:
-- [ ] 04-01-PLAN.md — Create src/lib/email.ts with sendLowStockAlertWithRetry()
+- [x] 04-01-PLAN.md — Create src/lib/email.ts with sendLowStockAlertWithRetry()
 
 Wave 2 — Alert logic in stock actions (parallel):
-- [ ] 04-02-PLAN.md — Add alertActive CAS + email to subtractStockViaQR (QR path)
-- [ ] 04-03-PLAN.md — Add alertActive CAS + email + reset to addStockMovement (manual path)
+- [x] 04-02-PLAN.md — Add alertActive CAS + email to subtractStockViaQR (QR path)
+- [x] 04-03-PLAN.md — Add alertActive CAS + email + reset to addStockMovement (manual path)
 
 Wave 3 — UI (parallel):
-- [ ] 04-04-PLAN.md — /alertas page + saveGlobalAlertEmail Server Action
-- [ ] 04-05-PLAN.md — Add Stock column + low-stock badge to /productos catalog
+- [x] 04-04-PLAN.md — /alertas page + saveGlobalAlertEmail Server Action
+- [x] 04-05-PLAN.md — Add Stock column + low-stock badge to /productos catalog
