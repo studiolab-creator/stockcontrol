@@ -78,10 +78,10 @@ export async function addStockMovement(
     })
 
     if (product) {
-      if (delta < 0 && product.stock < product.minStock && !product.alertActive) {
+      if (delta < 0 && product.stock < product.minStock) {
         // Branch A: manual reduction crossed alert threshold
         // D-02: strict less-than (stock < minStock, NOT <=)
-        // CAS prevents duplicate alerts if two mutations run concurrently
+        // CAS handles dedup atomically — no pre-check needed (mirrors QR path)
         const result = await prisma.product.updateMany({
           where: { id: productId, alertActive: false },
           data: { alertActive: true },
