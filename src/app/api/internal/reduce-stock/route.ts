@@ -10,7 +10,7 @@ function isAuthorized(req: NextRequest): boolean {
 }
 
 const BodySchema = z.object({
-  productId: z.string().uuid(),
+  sku: z.string().min(1),
   cantidad: z.number().int().positive(),
   motivo: z.string().optional(),
 })
@@ -47,15 +47,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  const { productId, cantidad, motivo = 'Empaquetado ML Ventas' } = parsed.data
+  const { sku, cantidad, motivo = 'Empaquetado ML Ventas' } = parsed.data
   const delta = -cantidad
+
+  const product = await prisma.product.findFirst({
+    where: { sku },
+    select: { id: true, nombre: true, minStock: true, alertActive: true, stock: true },
+  })
+  if (!product) {
+    return NextResponse.json({ error: `Producto con SKU "${sku}" no encontrado.` }, { status: 404 })
+  }
 
   const systemUserId = await getOrCreateSystemUser()
 
   try {
     await prisma.$transaction(async (tx) => {
       const updated = await tx.product.update({
-        where: { id: productId },
+        where: { id: product.id },
         data: { stock: { increment: delta } },
         select: { stock: true },
       })
@@ -65,27 +73,27 @@ export async function POST(req: NextRequest) {
       }
 
       await tx.movement.create({
-        data: { productId, userId: systemUserId, delta, motivo },
+        data: { productId: product.id, userId: systemUserId, delta, motivo },
       })
     })
 
     // Alert logic — same CAS pattern as subtractStockViaQR
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
+    const updated = await prisma.product.findUnique({
+      where: { id: product.id },
       select: { nombre: true, minStock: true, alertActive: true, stock: true },
     })
 
-    if (product && product.stock < product.minStock) {
+    if (updated && updated.stock < updated.minStock) {
       const result = await prisma.product.updateMany({
-        where: { id: productId, alertActive: false },
+        where: { id: product.id, alertActive: false },
         data: { alertActive: true },
       })
       if (result.count === 1) {
         await sendLowStockAlertWithRetry({
-          productId,
-          productName: product.nombre,
-          currentStock: product.stock,
-          minStock: product.minStock,
+          productId: product.id,
+          productName: updated.nombre,
+          currentStock: updated.stock,
+          minStock: updated.minStock,
           motivo,
         })
       }
