@@ -170,6 +170,7 @@ export function ProductForm({ action, categories, defaultValues, mode }: Product
           name="minStock"
           type="number"
           min={0}
+          step="0.001"
           defaultValue={defaultValues?.minStock ?? 0}
           disabled={pending}
           aria-describedby={state?.errors?.minStock ? 'minstock-error' : undefined}

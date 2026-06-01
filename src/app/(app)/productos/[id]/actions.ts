@@ -7,7 +7,7 @@ import { sendLowStockAlertWithRetry } from '@/lib/email'
 
 const MovementSchema = z.object({
   productId: z.string().uuid(),
-  delta: z.coerce.number().int().refine((n) => n !== 0, { message: 'La cantidad debe ser distinta de cero.' }),
+  delta: z.coerce.number().refine((n) => n !== 0, { message: 'La cantidad debe ser distinta de cero.' }),
   motivo: z.string().max(500).optional().nullable(),
 })
 

@@ -11,7 +11,7 @@ function isAuthorized(req: NextRequest): boolean {
 
 const BodySchema = z.object({
   sku: z.string().min(1),
-  cantidad: z.number().int().positive(),
+  cantidad: z.number().positive(),
   motivo: z.string().optional(),
 })
 

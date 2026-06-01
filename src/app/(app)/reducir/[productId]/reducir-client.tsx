@@ -100,7 +100,8 @@ export function ReducirClient({ product, action }: Props) {
               id="cantidad"
               name="cantidad"
               type="number"
-              min="1"
+              min="0.001"
+              step="0.001"
               placeholder="0"
               value={cantidad === 0 ? '' : cantidad}
               onChange={(e) =>

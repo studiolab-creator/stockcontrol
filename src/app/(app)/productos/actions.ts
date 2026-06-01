@@ -14,7 +14,7 @@ const ProductSchema = z.object({
   categoriaId: z.string().uuid().optional().nullable(),
   sku: z.string().max(100).optional().nullable(),
   unidad: z.string().max(50).optional().nullable(),
-  minStock: z.coerce.number().int().min(0, 'El stock mínimo debe ser 0 o mayor.'),
+  minStock: z.coerce.number().min(0, 'El stock mínimo debe ser 0 o mayor.'),
 })
 
 type ActionState = { error?: string; errors?: Record<string, string[]> } | undefined

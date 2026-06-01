@@ -164,7 +164,8 @@ export function StockMovementDialog({
                     id="quantity"
                     name="quantity"
                     type="number"
-                    min="1"
+                    min="0.001"
+                    step="0.001"
                     placeholder="0"
                     value={values.quantity === 0 ? '' : values.quantity}
                     onChange={(e) =>

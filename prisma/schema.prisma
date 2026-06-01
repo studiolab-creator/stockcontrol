@@ -79,8 +79,8 @@ model Product {
   categoriaId  String?
   sku          String?
   unidad       String?
-  stock        Int         @default(0)
-  minStock     Int         @default(0)
+  stock        Float       @default(0)
+  minStock     Float       @default(0)
   alertActive  Boolean     @default(false)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
@@ -102,7 +102,7 @@ model Movement {
   id        String   @id @default(uuid())
   productId String
   userId    String
-  delta     Int
+  delta     Float
   motivo    String?
   createdAt DateTime @default(now())
 

@@ -7,7 +7,7 @@ import { sendLowStockAlertWithRetry } from '@/lib/email'
 
 const ReduceSchema = z.object({
   productId: z.string().uuid(),
-  cantidad: z.coerce.number().int().positive(),
+  cantidad: z.coerce.number().positive(),
 })
 
 type ActionState =
