@@ -290,34 +290,42 @@ type ImpactoItem = {
 }
 
 function computeImpacto(items: OrderItem[], recetas: Recetas, terminados: Terminado[]): ImpactoItem[] {
-  const map = new Map<string, ImpactoItem>()
+  // Pass 1: accumulate numeric totals only — one number per ID, no metadata mixed in
+  const totals = new Map<string, number>()
   for (const item of items) {
     const receta = recetas[item.productoId] ?? []
     if (receta.length > 0) {
-      for (const r of receta) {
-        const prev = map.get(r.insumoId)
-        map.set(r.insumoId, {
-          id: r.insumoId,
-          nombre: r.insumoNombre,
-          unidad: r.insumoUnidad,
-          totalDescontado: (prev?.totalDescontado ?? 0) + r.cantidad * item.cantidad,
-          stockActual: r.insumoStock,
-        })
+      for (const entry of receta) {
+        totals.set(entry.insumoId, (totals.get(entry.insumoId) ?? 0) + entry.cantidad * item.cantidad)
       }
     } else {
-      // No recipe — deduct the product itself
-      const producto = terminados.find((t) => t.id === item.productoId)
-      if (producto) {
-        const prev = map.get(item.productoId)
-        map.set(item.productoId, {
-          id: item.productoId,
-          nombre: producto.nombre,
-          unidad: producto.unidad,
-          totalDescontado: (prev?.totalDescontado ?? 0) + item.cantidad,
-          stockActual: producto.stock,
+      totals.set(item.productoId, (totals.get(item.productoId) ?? 0) + item.cantidad)
+    }
+  }
+
+  // Pass 2: attach metadata using a separate lookup — totals are already final here
+  const insumoMeta = new Map<string, { nombre: string; unidad: string | null; stock: number }>()
+  for (const entries of Object.values(recetas)) {
+    for (const entry of entries) {
+      if (!insumoMeta.has(entry.insumoId)) {
+        insumoMeta.set(entry.insumoId, {
+          nombre: entry.insumoNombre,
+          unidad: entry.insumoUnidad,
+          stock: entry.insumoStock,
         })
       }
     }
   }
-  return Array.from(map.values())
+
+  const result: ImpactoItem[] = []
+  for (const [id, totalDescontado] of totals) {
+    const meta = insumoMeta.get(id)
+    if (meta) {
+      result.push({ id, nombre: meta.nombre, unidad: meta.unidad, totalDescontado, stockActual: meta.stock })
+    } else {
+      const t = terminados.find((p) => p.id === id)
+      if (t) result.push({ id, nombre: t.nombre, unidad: t.unidad, totalDescontado, stockActual: t.stock })
+    }
+  }
+  return result
 }
