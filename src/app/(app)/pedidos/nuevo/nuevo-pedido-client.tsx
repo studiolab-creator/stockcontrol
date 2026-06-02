@@ -175,9 +175,6 @@ export function NuevoPedidoClient({
                       {item.cantidad}
                       {unit}
                     </span>
-                    {!tieneReceta && (
-                      <span className="text-destructive text-xs">Sin receta — no se puede confirmar</span>
-                    )}
                   </div>
                   <Button
                     type="button"
@@ -195,7 +192,7 @@ export function NuevoPedidoClient({
 
         <Button
           onClick={() => setStep(2)}
-          disabled={items.length === 0 || items.some((i) => !(recetas[i.productoId]?.length > 0))}
+          disabled={items.length === 0}
         >
           Ver resumen
         </Button>

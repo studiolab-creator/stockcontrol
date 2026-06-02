@@ -34,19 +34,8 @@ export async function crearPedido(input: unknown): Promise<{ error?: string; suc
     select: { productoId: true, insumoId: true, cantidad: true },
   })
 
-  // Validate every product has at least one receta item
-  for (const item of items) {
-    const hasReceta = recetaItems.some((r) => r.productoId === item.productoId)
-    if (!hasReceta) {
-      const product = await prisma.product.findUnique({
-        where: { id: item.productoId },
-        select: { nombre: true },
-      })
-      return { error: `"${product?.nombre ?? item.productoId}" no tiene receta configurada.` }
-    }
-  }
-
   // Aggregate total deduction per insumo
+  // Products without recipe items simply don't deduct any insumo stock.
   const insumoTotales = new Map<string, number>()
   for (const item of items) {
     for (const r of recetaItems.filter((r) => r.productoId === item.productoId)) {

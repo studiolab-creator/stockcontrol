@@ -58,13 +58,11 @@ export default async function RecetasPage() {
               <TableRow key={producto.id} className="hover:bg-muted/50">
                 <TableCell className="text-sm font-medium">{producto.nombre}</TableCell>
                 <TableCell>
-                  {producto._count.recetaItems === 0 ? (
-                    <Badge variant="destructive" className="text-xs">Sin receta</Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-xs">
-                      {producto._count.recetaItems} insumo{producto._count.recetaItems !== 1 ? 's' : ''}
-                    </Badge>
-                  )}
+                  <Badge variant="secondary" className="text-xs">
+                    {producto._count.recetaItems === 0
+                      ? 'Sin insumos'
+                      : `${producto._count.recetaItems} insumo${producto._count.recetaItems !== 1 ? 's' : ''}`}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <Button
