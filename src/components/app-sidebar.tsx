@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { LayoutDashboard, Package, History, QrCode, Bell, LogOut, ScanLine, Users, ClipboardList } from 'lucide-react'
+import { LayoutDashboard, Package, History, QrCode, Bell, LogOut, ScanLine, Users, ClipboardList, BookOpen } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +22,7 @@ const navItems = [
   { href: '/qr', label: 'Gestión QR', icon: QrCode, adminOnly: true },
   { href: '/escanear', label: 'Escanear QR', icon: ScanLine, adminOnly: false },
   { href: '/pedidos', label: 'Pedidos', icon: ClipboardList, adminOnly: true },
+  { href: '/recetas', label: 'Recetas', icon: BookOpen, adminOnly: true },
   { href: '/alertas', label: 'Config. Alertas', icon: Bell, adminOnly: true },
   { href: '/usuarios', label: 'Usuarios', icon: Users, adminOnly: true },
 ]
