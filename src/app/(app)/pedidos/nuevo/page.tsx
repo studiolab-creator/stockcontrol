@@ -8,7 +8,7 @@ export default async function NuevoPedidoPage() {
   const [terminados, recetaItems] = await Promise.all([
     prisma.product.findMany({
       where: { tipo: 'TERMINADO' },
-      select: { id: true, nombre: true, unidad: true },
+      select: { id: true, nombre: true, unidad: true, stock: true },
       orderBy: { nombre: 'asc' },
     }),
     prisma.recetaItem.findMany({

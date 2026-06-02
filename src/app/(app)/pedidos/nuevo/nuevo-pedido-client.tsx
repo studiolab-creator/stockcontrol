@@ -18,7 +18,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { crearPedido } from './actions'
 
-export type Terminado = { id: string; nombre: string; unidad: string | null }
+export type Terminado = { id: string; nombre: string; unidad: string | null; stock: number }
 export type RecetaEntry = {
   insumoId: string
   insumoNombre: string
@@ -46,7 +46,7 @@ export function NuevoPedidoClient({
   const [cantidad, setCantidad] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
 
-  const impacto = computeImpacto(items, recetas)
+  const impacto = computeImpacto(items, recetas, terminados)
 
   const handleAddItem = () => {
     const cant = Number(cantidad)
@@ -232,12 +232,12 @@ export function NuevoPedidoClient({
             <Separator />
             <div className="flex flex-col gap-1.5">
               <span className="text-muted-foreground font-medium">Insumos descontados</span>
-              {impacto.map(({ insumoId, insumoNombre, insumoUnidad, totalDescontado, stockActual }) => {
-                const unit = insumoUnidad ? ` ${insumoUnidad}` : ''
+              {impacto.map(({ id, nombre, unidad, totalDescontado, stockActual }) => {
+                const unit = unidad ? ` ${unidad}` : ''
                 const stockResultante = stockActual - totalDescontado
                 return (
-                  <div key={insumoId} className="flex justify-between pl-2">
-                    <span>{insumoNombre}</span>
+                  <div key={id} className="flex justify-between pl-2">
+                    <span>{nombre}</span>
                     <span
                       className={
                         stockResultante < 0 ? 'text-destructive font-medium' : 'font-medium'
@@ -282,25 +282,41 @@ export function NuevoPedidoClient({
 }
 
 type ImpactoItem = {
-  insumoId: string
-  insumoNombre: string
-  insumoUnidad: string | null
+  id: string
+  nombre: string
+  unidad: string | null
   totalDescontado: number
   stockActual: number
 }
 
-function computeImpacto(items: OrderItem[], recetas: Recetas): ImpactoItem[] {
+function computeImpacto(items: OrderItem[], recetas: Recetas, terminados: Terminado[]): ImpactoItem[] {
   const map = new Map<string, ImpactoItem>()
   for (const item of items) {
-    for (const r of recetas[item.productoId] ?? []) {
-      const prev = map.get(r.insumoId)
-      map.set(r.insumoId, {
-        insumoId: r.insumoId,
-        insumoNombre: r.insumoNombre,
-        insumoUnidad: r.insumoUnidad,
-        totalDescontado: (prev?.totalDescontado ?? 0) + r.cantidad * item.cantidad,
-        stockActual: r.insumoStock,
-      })
+    const receta = recetas[item.productoId] ?? []
+    if (receta.length > 0) {
+      for (const r of receta) {
+        const prev = map.get(r.insumoId)
+        map.set(r.insumoId, {
+          id: r.insumoId,
+          nombre: r.insumoNombre,
+          unidad: r.insumoUnidad,
+          totalDescontado: (prev?.totalDescontado ?? 0) + r.cantidad * item.cantidad,
+          stockActual: r.insumoStock,
+        })
+      }
+    } else {
+      // No recipe — deduct the product itself
+      const producto = terminados.find((t) => t.id === item.productoId)
+      if (producto) {
+        const prev = map.get(item.productoId)
+        map.set(item.productoId, {
+          id: item.productoId,
+          nombre: producto.nombre,
+          unidad: producto.unidad,
+          totalDescontado: (prev?.totalDescontado ?? 0) + item.cantidad,
+          stockActual: producto.stock,
+        })
+      }
     }
   }
   return Array.from(map.values())
