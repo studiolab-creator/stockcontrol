@@ -41,6 +41,7 @@ model User {
   updatedAt    DateTime   @updatedAt
 
   movements    Movement[]
+  pedidos      Pedido[]
 
   @@index([username])
 }
@@ -86,8 +87,11 @@ model Product {
   updatedAt    DateTime    @updatedAt
 
   categoria    Category?   @relation(fields: [categoriaId], references: [id])
-  movements    Movement[]
-  alertConfig  AlertConfig?
+  movements      Movement[]
+  alertConfig    AlertConfig?
+  recetaItems    RecetaItem[]  @relation("RecetaProducto")
+  recetaInsumos  RecetaItem[]  @relation("RecetaInsumo")
+  pedidoItems    PedidoItem[]
 
   @@index([categoriaId])
   @@index([tipo])
@@ -112,6 +116,51 @@ model Movement {
   @@index([productId, createdAt(sort: Desc)])
   @@index([userId])
   @@index([createdAt(sort: Desc)])
+}
+
+// ─── RECETAS (Bill of Materials) ─────────────────────────────────────────────
+// Each TERMINADO product can have a list of INSUMO ingredients with quantities.
+// Used by the manual orders flow to compute stock deductions per insumo.
+
+model RecetaItem {
+  id         String   @id @default(uuid())
+  productoId String
+  insumoId   String
+  cantidad   Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  producto   Product  @relation("RecetaProducto", fields: [productoId], references: [id], onDelete: Cascade)
+  insumo     Product  @relation("RecetaInsumo", fields: [insumoId], references: [id])
+
+  @@unique([productoId, insumoId])
+  @@index([productoId])
+}
+
+// ─── PEDIDOS (Manual Orders) ──────────────────────────────────────────────────
+// Admin-only. Each order holds N items (terminado + cantidad).
+// On confirmation, stock is deducted atomically from every required insumo.
+
+model Pedido {
+  id          String       @id @default(uuid())
+  userId      String
+  descripcion String?
+  createdAt   DateTime     @default(now())
+
+  user        User         @relation(fields: [userId], references: [id])
+  items       PedidoItem[]
+}
+
+model PedidoItem {
+  id         String  @id @default(uuid())
+  pedidoId   String
+  productoId String
+  cantidad   Float
+
+  pedido     Pedido  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  producto   Product @relation(fields: [productoId], references: [id])
+
+  @@index([pedidoId])
 }
 
 // ─── ALERT CONFIG (Phase 4) ──────────────────────────────────────────────────

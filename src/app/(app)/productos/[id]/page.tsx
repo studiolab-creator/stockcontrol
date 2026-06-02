@@ -91,13 +91,24 @@ export default async function ProductDetailPage({
     <div>
       <div className="flex items-start justify-between gap-4 mb-2">
         <h1 className="text-xl font-semibold text-foreground">{product.nombre}</h1>
-        <Button
-          variant="ghost"
-          size="sm"
-          render={<Link href={`/productos/${product.id}/editar`} />}
-        >
-          Editar producto
-        </Button>
+        <div className="flex gap-2">
+          {product.tipo === 'TERMINADO' && session.role === 'ADMIN' && (
+            <Button
+              variant="outline"
+              size="sm"
+              render={<Link href={`/productos/${product.id}/receta`} />}
+            >
+              Receta
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            render={<Link href={`/productos/${product.id}/editar`} />}
+          >
+            Editar producto
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 mb-4">
