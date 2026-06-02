@@ -80,9 +80,10 @@ model Product {
   categoriaId  String?
   sku          String?
   unidad       String?
-  stock        Float       @default(0)
-  minStock     Float       @default(0)
-  alertActive  Boolean     @default(false)
+  stock               Float       @default(0)
+  minStock            Float       @default(0)
+  alertActive         Boolean     @default(false)
+  ocultarEnDashboard  Boolean     @default(false)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 

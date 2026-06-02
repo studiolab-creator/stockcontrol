@@ -7,6 +7,7 @@ export default async function DashboardPage() {
 
   const [products, categories] = await Promise.all([
     prisma.product.findMany({
+      where: { ocultarEnDashboard: false },
       include: { categoria: true },
       orderBy: { nombre: 'asc' },
     }),

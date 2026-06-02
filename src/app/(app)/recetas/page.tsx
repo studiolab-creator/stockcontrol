@@ -11,6 +11,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { NuevoProductoForm } from './nuevo-producto-form'
 
 export default async function RecetasPage() {
   await requireAdmin()
@@ -33,6 +35,10 @@ export default async function RecetasPage() {
           </p>
         </div>
       </div>
+
+      <NuevoProductoForm />
+
+      {terminados.length > 0 && <Separator className="my-6" />}
 
       {terminados.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
