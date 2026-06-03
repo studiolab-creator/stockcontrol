@@ -2,22 +2,7 @@ import Link from 'next/link'
 import { requireAdmin } from '@/lib/dal'
 import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-
-const dateFormatter = new Intl.DateTimeFormat('es-AR', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-})
+import { PedidosTable } from './pedidos-table'
 
 export default async function PedidosPage() {
   await requireAdmin()
@@ -52,42 +37,7 @@ export default async function PedidosPage() {
           </Button>
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Usuario</TableHead>
-              <TableHead>Descripción</TableHead>
-              <TableHead>Productos</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pedidos.map((pedido) => (
-              <TableRow key={pedido.id} className="hover:bg-muted/50 align-top">
-                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                  {dateFormatter.format(new Date(pedido.createdAt))}
-                </TableCell>
-                <TableCell className="text-sm">{pedido.user.username}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {pedido.descripcion ?? '—'}
-                </TableCell>
-                <TableCell className="text-sm">
-                  <ul className="flex flex-col gap-0.5">
-                    {pedido.items.map((item) => {
-                      const unit = item.producto.unidad ? ` ${item.producto.unidad}` : ''
-                      return (
-                        <li key={item.id} className="text-muted-foreground">
-                          <span className="font-medium text-foreground">{item.producto.nombre}</span>
-                          {' '}× {item.cantidad}{unit}
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <PedidosTable pedidos={pedidos} />
       )}
     </div>
   )
