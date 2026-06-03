@@ -18,6 +18,7 @@ export default async function ProductosPage() {
   const isAdmin = session.role === 'ADMIN'
 
   const products = await prisma.product.findMany({
+    where: { ocultarEnDashboard: false },
     include: { categoria: true },
     orderBy: { nombre: 'asc' },
   })
