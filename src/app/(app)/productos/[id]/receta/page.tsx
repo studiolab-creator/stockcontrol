@@ -34,7 +34,6 @@ export default async function RecetaPage({
       orderBy: { createdAt: 'asc' },
     }),
     prisma.product.findMany({
-      where: { id: { not: id } },
       select: { id: true, nombre: true, unidad: true, tipo: true },
       orderBy: { nombre: 'asc' },
     }),

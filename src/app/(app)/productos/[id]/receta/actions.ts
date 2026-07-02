@@ -29,10 +29,6 @@ export async function upsertRecetaItem(
 
   const { insumoId, cantidad } = validated.data
 
-  if (insumoId === productoId) {
-    return { error: 'Un producto no puede ser insumo de sí mismo.' }
-  }
-
   await prisma.recetaItem.upsert({
     where: { productoId_insumoId: { productoId, insumoId } },
     create: { productoId, insumoId, cantidad },
