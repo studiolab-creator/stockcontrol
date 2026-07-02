@@ -6,46 +6,66 @@ import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
 
-type Insumo = { id: string; nombre: string; unidad: string | null }
+type Ingrediente = { id: string; nombre: string; unidad: string | null; tipo: 'TERMINADO' | 'INSUMO' }
 type ActionState = { error?: string; errors?: Record<string, string[]> } | undefined
 type ActionFn = (prevState: ActionState, formData: FormData) => Promise<ActionState>
 
 export function RecetaForm({
   action,
-  insumosDisponibles,
+  ingredientesDisponibles,
 }: {
   action: ActionFn
-  insumosDisponibles: Insumo[]
+  ingredientesDisponibles: Ingrediente[]
 }) {
   const [state, formAction, pending] = useActionState(action, undefined)
 
-  if (insumosDisponibles.length === 0) {
+  if (ingredientesDisponibles.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        Todos los insumos disponibles ya están en la receta.
+        Todos los insumos y productos disponibles ya están en la receta.
       </p>
     )
   }
 
+  const insumos = ingredientesDisponibles.filter((i) => i.tipo === 'INSUMO')
+  const productos = ingredientesDisponibles.filter((i) => i.tipo === 'TERMINADO')
+
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-3">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="insumoId">Insumo</Label>
+        <Label htmlFor="insumoId">Ingrediente</Label>
         <Select name="insumoId" required>
           <SelectTrigger id="insumoId" className="w-[220px]">
-            <SelectValue placeholder="Seleccionar insumo" />
+            <SelectValue placeholder="Seleccionar ingrediente" />
           </SelectTrigger>
           <SelectContent>
-            {insumosDisponibles.map((i) => (
-              <SelectItem key={i.id} value={i.id}>
-                {i.nombre}{i.unidad ? ` (${i.unidad})` : ''}
-              </SelectItem>
-            ))}
+            {insumos.length > 0 && (
+              <SelectGroup>
+                <SelectLabel>Insumos</SelectLabel>
+                {insumos.map((i) => (
+                  <SelectItem key={i.id} value={i.id}>
+                    {i.nombre}{i.unidad ? ` (${i.unidad})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            )}
+            {productos.length > 0 && (
+              <SelectGroup>
+                <SelectLabel>Productos terminados</SelectLabel>
+                {productos.map((i) => (
+                  <SelectItem key={i.id} value={i.id}>
+                    {i.nombre}{i.unidad ? ` (${i.unidad})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            )}
           </SelectContent>
         </Select>
         {state?.errors?.insumoId && (

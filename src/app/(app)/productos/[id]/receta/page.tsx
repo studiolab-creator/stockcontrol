@@ -23,19 +23,19 @@ export default async function RecetaPage({
   await requireAdmin()
   const { id } = await params
 
-  const [product, recetaItems, todosLosInsumos] = await Promise.all([
+  const [product, recetaItems, todosLosIngredientes] = await Promise.all([
     prisma.product.findUnique({
       where: { id },
       select: { id: true, nombre: true, tipo: true },
     }),
     prisma.recetaItem.findMany({
       where: { productoId: id },
-      include: { insumo: { select: { id: true, nombre: true, unidad: true } } },
+      include: { insumo: { select: { id: true, nombre: true, unidad: true, tipo: true } } },
       orderBy: { createdAt: 'asc' },
     }),
     prisma.product.findMany({
-      where: { tipo: 'INSUMO' },
-      select: { id: true, nombre: true, unidad: true },
+      where: { id: { not: id } },
+      select: { id: true, nombre: true, unidad: true, tipo: true },
       orderBy: { nombre: 'asc' },
     }),
   ])
@@ -44,8 +44,8 @@ export default async function RecetaPage({
     notFound()
   }
 
-  const insumoIdsEnReceta = new Set(recetaItems.map((r) => r.insumoId))
-  const insumosDisponibles = todosLosInsumos.filter((i) => !insumoIdsEnReceta.has(i.id))
+  const ingredienteIdsEnReceta = new Set(recetaItems.map((r) => r.insumoId))
+  const ingredientesDisponibles = todosLosIngredientes.filter((i) => !ingredienteIdsEnReceta.has(i.id))
 
   const boundAction = upsertRecetaItem.bind(null, id)
 
@@ -58,7 +58,7 @@ export default async function RecetaPage({
         </Button>
       </div>
       <p className="text-sm text-muted-foreground mb-6">
-        Definí cuánto de cada insumo se consume por unidad de este producto.
+        Definí cuánto de cada insumo o producto se consume por unidad de este producto.
       </p>
 
       {recetaItems.length === 0 ? (
@@ -69,7 +69,7 @@ export default async function RecetaPage({
         <Table className="mb-6">
           <TableHeader>
             <TableRow>
-              <TableHead>Insumo</TableHead>
+              <TableHead>Ingrediente</TableHead>
               <TableHead>Cantidad por unidad</TableHead>
               <TableHead />
             </TableRow>
@@ -77,7 +77,12 @@ export default async function RecetaPage({
           <TableBody>
             {recetaItems.map((item) => (
               <TableRow key={item.id}>
-                <TableCell className="text-sm">{item.insumo.nombre}</TableCell>
+                <TableCell className="text-sm">
+                  {item.insumo.nombre}
+                  {item.insumo.tipo === 'TERMINADO' && (
+                    <span className="ml-2 text-xs text-muted-foreground">(producto)</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-sm">
                   {item.cantidad}{item.insumo.unidad ? ` ${item.insumo.unidad}` : ''}
                 </TableCell>
@@ -101,8 +106,8 @@ export default async function RecetaPage({
 
       <Separator className="my-6" />
 
-      <h2 className="text-base font-semibold mb-4">Agregar insumo</h2>
-      <RecetaForm action={boundAction} insumosDisponibles={insumosDisponibles} />
+      <h2 className="text-base font-semibold mb-4">Agregar ingrediente</h2>
+      <RecetaForm action={boundAction} ingredientesDisponibles={ingredientesDisponibles} />
     </div>
   )
 }
